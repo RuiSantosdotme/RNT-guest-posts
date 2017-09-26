@@ -21,17 +21,21 @@ String nameOfCity = "REPLACE_WITH_YOUR_CITY,REPLACE_WITH_YOUR_COUNTRY_CODE";
 // How your nameOfCity variable would look like for Lagos on Nigeria
 //String nameOfCity = "Lagos,NG"; 
 
+// Replace the next line with your API Key
+String apiKey = "REPLACE_WITH_YOUR_API_KEY"; 
+
 String text;
 
 int jsonend = 0;
 boolean startJson = false;
 int status = WL_IDLE_STATUS;
 
-int rainLed = 2     // Indicates rain
-int clearLed = 3    // Indicates clear sky or sunny
-int snowLed = 4     // Indicates snow
-int hailLed = 5     // Indicates hail
+int rainLed = 2;  // Indicates rain
+int clearLed = 3; // Indicates clear sky or sunny
+int snowLed = 4;  // Indicates snow
+int hailLed = 5;  // Indicates hail
 
+#define JSON_BUFF_DIMENSION 2500
 
 unsigned long lastConnectionTime = 10 * 60 * 1000;     // last time you connected to the server, in milliseconds
 const unsigned long postInterval = 10 * 60 * 1000;  // posting interval of 10 minutes  (10L * 1000L; 10 seconds delay for testing)
@@ -39,7 +43,7 @@ const unsigned long postInterval = 10 * 60 * 1000;  // posting interval of 10 mi
 void setup() {
   pinMode(clearLed, OUTPUT);
   pinMode(rainLed, OUTPUT);
-  pinMode(snowrLed, OUTPUT);
+  pinMode(snowLed, OUTPUT);
   pinMode(hailLed, OUTPUT);
   Serial.begin(9600);
   
@@ -90,7 +94,7 @@ void loop() {
 }
 
 // print Wifi status
-void printWifiStatus() {
+void printWiFiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
@@ -116,9 +120,8 @@ void makehttpRequest() {
   if (client.connect(server, 80)) {
     // Serial.println("connecting...");
     // send the HTTP PUT request:
-    client.println("GET /data/2.5/forecast?q=" + nameOfCity + "&mode=json&units=metric&cnt=2 HTTP/1.1");
+    client.println("GET /data/2.5/forecast?q=" + nameOfCity + "&APPID=" + apiKey + "&mode=json&units=metric&cnt=2 HTTP/1.1");
     client.println("Host: api.openweathermap.org");
-    client.println("User-Agent: ArduinoWiFi/1.1");// note: CHANGE THIS TO YOURS
     client.println("Connection: close");
     client.println();
   }
@@ -169,7 +172,7 @@ void diffDataAction(String now, String later, String weatherType) {
   int indexNow = now.indexOf(weatherType);
   int indexLater = later.indexOf(weatherType);
   // if weather type = rain, if the current weather does not contain the weather type and the later message does, send notification
-  if (weatherType == "rain") {
+  if (weatherType == "rain") { 
     if (indexNow == -1 && indexLater != -1) {
       digitalWrite(rainLed,HIGH);
       digitalWrite(clearLed,LOW);
