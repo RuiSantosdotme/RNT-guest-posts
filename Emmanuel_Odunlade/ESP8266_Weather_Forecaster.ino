@@ -37,8 +37,8 @@ int hailLed = 5;  // Indicates hail
 
 #define JSON_BUFF_DIMENSION 2500
 
-unsigned long lastConnectionTime = 10 * 60 * 1000;     // last time you connected to the server, in milliseconds
-const unsigned long postInterval = 10 * 60 * 1000;  // posting interval of 10 minutes  (10L * 1000L; 10 seconds delay for testing)
+unsigned long lastConnectionTime = 1 * 10 * 1000;     // last time you connected to the server, in milliseconds
+const unsigned long postInterval = 1 * 10 * 1000;  // posting interval of 10 minutes  (10L * 1000L; 10 seconds delay for testing)
 
 void setup() {
   pinMode(clearLed, OUTPUT);
@@ -66,30 +66,6 @@ void loop() {
     // note the time that the connection was made:
     lastConnectionTime = millis();
     makehttpRequest();
-  }
-
-  char c = 0;
-  if (client.available()) {
-    c = client.read();
-    // since json contains equal number of open and close curly brackets, this means we can determine when a json is completely received  by counting
-    // the open and close occurences,
-    
-    // if jsonend = 0 then we have have received equal number of curly braces 
-    if (jsonend == 0 && startJson == true) {
-      parseJson(text.c_str());  // parse c string text in parseJson function
-      text = "";                // clear text string for the next time
-      startJson = false;        // set startJson to false to indicate that a new message has not yet started
-    }
-    if (c == '{') {
-      startJson = true;         // set startJson true to indicate json message has started
-      jsonend++;
-    }
-    if (c == '}') {
-      jsonend--;
-    }
-    if (startJson == true) {
-      text += c;
-    }
   }
 }
 
@@ -122,18 +98,55 @@ void makehttpRequest() {
     // send the HTTP PUT request:
     client.println("GET /data/2.5/forecast?q=" + nameOfCity + "&APPID=" + apiKey + "&mode=json&units=metric&cnt=2 HTTP/1.1");
     client.println("Host: api.openweathermap.org");
+    client.println("User-Agent: ArduinoWiFi/1.1");
     client.println("Connection: close");
     client.println();
+    
+    unsigned long timeout = millis();
+    while (client.available() == 0) {
+      if (millis() - timeout > 5000) {
+        Serial.println(">>> Client Timeout !");
+        client.stop();
+        return;
+      }
+    }
+    
+    char c = 0;
+    while (client.available()) {
+      c = client.read();
+      // since json contains equal number of open and close curly brackets, this means we can determine when a json is completely received  by counting
+      // the open and close occurences,
+      //Serial.print(c);
+      if (c == '{') {
+        startJson = true;         // set startJson true to indicate json message has started
+        jsonend++;
+      }
+      if (c == '}') {
+        jsonend--;
+      }
+      if (startJson == true) {
+        text += c;
+      }
+      // if jsonend = 0 then we have have received equal number of curly braces 
+      if (jsonend == 0 && startJson == true) {
+        parseJson(text.c_str());  // parse c string text in parseJson function
+        text = "";                // clear text string for the next time
+        startJson = false;        // set startJson to false to indicate that a new message has not yet started
+      }
+    }
   }
   else {
     // if no connction was made:
     Serial.println("connection failed");
+    return;
   }
 }
 
 //to parse json data recieved from OWM
 void parseJson(const char * jsonString) {
-  StaticJsonBuffer<4000> jsonBuffer;
+  //StaticJsonBuffer<4000> jsonBuffer;
+  const size_t bufferSize = 2*JSON_ARRAY_SIZE(1) + JSON_ARRAY_SIZE(2) + 4*JSON_OBJECT_SIZE(1) + 3*JSON_OBJECT_SIZE(2) + 3*JSON_OBJECT_SIZE(4) + JSON_OBJECT_SIZE(5) + 2*JSON_OBJECT_SIZE(7) + 2*JSON_OBJECT_SIZE(8) + 720;
+  DynamicJsonBuffer jsonBuffer(bufferSize);
 
   // FIND FIELDS IN JSON TREE
   JsonObject& root = jsonBuffer.parseObject(jsonString);
@@ -143,16 +156,16 @@ void parseJson(const char * jsonString) {
   }
 
   JsonArray& list = root["list"];
-  JsonObject& now = list[0];
+  JsonObject& nowT = list[0];
   JsonObject& later = list[1];
 
   // including temperature and humidity for those who may wish to hack it in
   
   String city = root["city"]["name"];
   
-  float tempNow = now["main"]["temp"];
-  float humidityNow = now["main"]["humidity"];
-  String weatherNow = now["weather"][0]["description"];
+  float tempNow = nowT["main"]["temp"];
+  float humidityNow = nowT["main"]["humidity"];
+  String weatherNow = nowT["weather"][0]["description"];
 
   float tempLater = later["main"]["temp"];
   float humidityLater = later["main"]["humidity"];
@@ -168,14 +181,16 @@ void parseJson(const char * jsonString) {
 }
 
 //representing the data
-void diffDataAction(String now, String later, String weatherType) {
-  int indexNow = now.indexOf(weatherType);
+void diffDataAction(String nowT, String later, String weatherType) {
+  int indexNow = nowT.indexOf(weatherType);
   int indexLater = later.indexOf(weatherType);
   // if weather type = rain, if the current weather does not contain the weather type and the later message does, send notification
   if (weatherType == "rain") { 
     if (indexNow == -1 && indexLater != -1) {
       digitalWrite(rainLed,HIGH);
       digitalWrite(clearLed,LOW);
+      digitalWrite(snowLed,LOW);
+      digitalWrite(hailLed,LOW);
       Serial.println("Oh no! It is going to " + weatherType + " later! Predicted " + later);
     }
   }
@@ -184,6 +199,8 @@ void diffDataAction(String now, String later, String weatherType) {
     if (indexNow == -1 && indexLater != -1) {
       digitalWrite(snowLed,HIGH);
       digitalWrite(clearLed,LOW);
+      digitalWrite(rainLed,LOW);
+      digitalWrite(hailLed,LOW);
       Serial.println("Oh no! It is going to " + weatherType + " later! Predicted " + later);
     }
     
@@ -193,6 +210,8 @@ void diffDataAction(String now, String later, String weatherType) {
    if (indexNow == -1 && indexLater != -1) {
       digitalWrite(hailLed,HIGH);
       digitalWrite(clearLed,LOW);
+      digitalWrite(rainLed,LOW);
+      digitalWrite(snowLed,LOW);
       Serial.println("Oh no! It is going to " + weatherType + " later! Predicted " + later);
    }
 
