@@ -37,8 +37,8 @@ int hailLed = 5;  // Indicates hail
 
 #define JSON_BUFF_DIMENSION 2500
 
-unsigned long lastConnectionTime = 1 * 10 * 1000;     // last time you connected to the server, in milliseconds
-const unsigned long postInterval = 1 * 10 * 1000;  // posting interval of 10 minutes  (10L * 1000L; 10 seconds delay for testing)
+unsigned long lastConnectionTime = 10 * 60 * 1000;     // last time you connected to the server, in milliseconds
+const unsigned long postInterval = 10 * 60 * 1000;  // posting interval of 10 minutes  (10L * 1000L; 10 seconds delay for testing)
 
 void setup() {
   pinMode(clearLed, OUTPUT);
