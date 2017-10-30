@@ -51,4 +51,3 @@ while True:
             print("error, couldnt send mail, be sure to enable non secure apps login on sender's email")
 
         time.sleep(3)
-        
