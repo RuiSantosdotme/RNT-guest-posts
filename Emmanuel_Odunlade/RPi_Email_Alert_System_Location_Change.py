@@ -1,5 +1,5 @@
 #
-# Author: Emmanuel Odunlade 
+# Author: Emmanuel Odunlade
 # Complete Project Details http://randomnerdtutorials.com
 #
 
@@ -18,14 +18,13 @@ toaddr = "REPLACE_WITH_YOUR_TO_EMAIL_ADDRESS"
 msg = MIMEMultipart()
 msg['From'] = fromaddr
 msg['To'] = toaddr
-msg['Subject'] = " Location change alert"
+msg['Subject'] = "Location change alert"
 
-
-#setup the serial port to which gps is connected 
+#setup the serial port to which GPS is connected to
 port = "/dev/ttyAMA0"
-ser = serial.Serial(port, baudrate = 9600, timeout = 0.5)
+ser = serial.Serial(port, baudrate=9600, timeout=0.5)
 dataout  = pynmea2.NMEAStreamReader()
-    
+
 while True:
     newdata = ser.readline()
     print ("getting new lat")
