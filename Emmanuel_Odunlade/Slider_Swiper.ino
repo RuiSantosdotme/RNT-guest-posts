@@ -32,7 +32,7 @@ void setup(){
   pinMode(lEcho,INPUT);
   pinMode(lTrig,OUTPUT);
   
-  Serial.begin(SERIAL_HID_BAUD);
+  Serial.begin(9600);
     // Sends a clean report to the host. This is important because
   // the 16u2 of the Uno/Mega is not turned off while programming
   // so you want to start with a clean report to avoid strange bugs after reset.
